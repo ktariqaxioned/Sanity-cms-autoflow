@@ -48,9 +48,40 @@ export default function WorkflowForm() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
     setMessage("");
 
+    if (!name.trim()) {
+      setMessage("Please enter a workflow name.");
+      return;
+    }
+
+    if (steps.length === 0) {
+      setMessage("Add at least one workflow step.");
+      return;
+    }
+
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+
+      if (!step?.name.trim()) {
+        setMessage(`Please enter a name for Step ${i + 1}.`);
+        return;
+      }
+
+      if (!["action", "ai", "condition"].includes(step.type)) {
+        setMessage(`Step ${i + 1} has an invalid type.`);
+        return;
+      }
+
+      try {
+        JSON.parse(step.config);
+      } catch {
+        setMessage(`Step ${i + 1} has invalid JSON configuration.`);
+        return;
+      }
+    }
+
+    setLoading(true);
     try {
       const response = await fetch("/api/workflows", {
         method: "POST",
