@@ -9,8 +9,12 @@
   "scripts": {
     "check-types": "tsc --noEmit"
   },
+  "dependencies": {
+    "@autoflow/sanity-client": "*"
+  },
   "devDependencies": {
     "@repo/typescript-config": "*",
+    "@types/node": "26.4.1",
     "typescript": "7.0.2"
   }
 }

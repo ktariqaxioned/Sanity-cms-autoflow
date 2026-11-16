@@ -34,6 +34,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@autoflow/sanity-client": "*",
+        "@autoflow/workflow-engine": "*",
         "@repo/ui": "*",
         "class-variance-authority": "^0.7.1",
         "cn": "^0.5.2",
@@ -111,8 +112,12 @@
     "packages/workflow-engine": {
       "name": "@autoflow/workflow-engine",
       "version": "0.0.1",
+      "dependencies": {
+        "@autoflow/sanity-client": "*",
+      },
       "devDependencies": {
         "@repo/typescript-config": "*",
+        "@types/node": "26.4.1",
         "typescript": "7.0.2",
       },
     },
