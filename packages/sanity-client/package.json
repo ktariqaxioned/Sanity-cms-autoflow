@@ -1,0 +1,13 @@
+{
+    "name": "@autoflow/sanity-client",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "exports": {
+      ".": "./src/index.ts",
+      "./queries": "./src/queries.ts"
+    },
+    "dependencies": {
+      "@sanity/client": "^7.0.0"
+    }
+  }
