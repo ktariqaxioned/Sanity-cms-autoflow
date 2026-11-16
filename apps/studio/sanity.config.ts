@@ -3,12 +3,15 @@ import {structureTool} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
 import {schemaTypes} from './schemaTypes'
 
+const projectId = process.env.SANITY_STUDIO_PROJECT_ID || 'xn4502ws'
+const dataset = process.env.SANITY_STUDIO_DATASET || 'production'
+
 export default defineConfig({
   name: 'default',
   title: 'autoflow',
 
-  projectId: 'xn4502ws',
-  dataset: 'production',
+  projectId,
+  dataset,
 
   plugins: [structureTool(), visionTool()],
 

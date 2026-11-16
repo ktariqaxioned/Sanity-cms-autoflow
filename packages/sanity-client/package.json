@@ -1,13 +1,22 @@
 {
-    "name": "@autoflow/sanity-client",
-    "version": "0.0.1",
-    "private": true,
-    "type": "module",
-    "exports": {
-      ".": "./src/index.ts",
-      "./queries": "./src/queries.ts"
-    },
-    "dependencies": {
-      "@sanity/client": "^7.0.0"
-    }
+  "name": "@autoflow/sanity-client",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./queries": "./src/queries.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sanity/client": "^8.15.0",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/node": "26.4.1",
+    "typescript": "7.0.2"
   }
+}
