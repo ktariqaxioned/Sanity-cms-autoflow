@@ -12,6 +12,10 @@ export {
 } from "./queries";
 
 export { createTask } from "./mutations";
+export {
+    createWorkflow,
+  } from "./workflowMutations";
+  
 
 export type {
   Task,
@@ -21,3 +25,6 @@ export type {
   WorkflowTemplate,
 } from "./queries";
 export type { CreateTaskInput } from "./mutations";
+export type {
+    CreateWorkflowInput,
+  } from "./workflowMutations";
