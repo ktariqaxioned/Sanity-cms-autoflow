@@ -1,7 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createWorkflow, CreateWorkflowInput } from "@autoflow/sanity-client";
+import { getSanityClient } from "@autoflow/sanity-client";
 
 export const runtime = "nodejs";
+
+export async function GET() {
+    try {
+      const client = getSanityClient();
+  
+      const workflows = await client.fetch(`
+        *[_type == "workflow"] | order(_createdAt desc) {
+          _id,
+          name,
+          description,
+          status,
+          trigger,
+          steps,
+          createdAt,
+          lastExecutedAt
+        }
+      `);
+  
+      return NextResponse.json({
+        success: true,
+        workflows,
+      });
+    } catch (error) {
+      console.error("WORKFLOW FETCH ERROR:", error);
+  
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unable to fetch workflows.",
+        },
+        { status: 500 }
+      );
+    }
+  }
 
 export async function POST(request: NextRequest) {
   try {
