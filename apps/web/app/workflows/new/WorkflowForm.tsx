@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 
+interface Step {
+  stepId: string;
+  name: string;
+  type: string;
+  action: string;
+  config: string;
+}
+
 export default function WorkflowForm() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -11,15 +19,7 @@ export default function WorkflowForm() {
   const [documentType, setDocumentType] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [steps, setSteps] = useState([
-    {
-      stepId: "step-1",
-      name: "Fetch Incomplete Tasks",
-      type: "action",
-      action: "fetchTasks",
-      config: '{"limit":50}',
-    },
-  ]);
+  const [steps, setSteps] = useState<Step[]>([]);
 
   function addStep() {
     setSteps((current) => [
