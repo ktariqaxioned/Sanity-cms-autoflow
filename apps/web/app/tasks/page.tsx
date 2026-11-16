@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
+import TaskForm from "./TaskForm";
 export const dynamic = "force-dynamic";
 
 function priorityVariant(priority?: string) {
@@ -114,6 +114,8 @@ export default async function TasksPage() {
             Manage your tasks in AutoFlow.
           </p>
         </div>
+
+        <TaskForm />
 
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard label="Total tasks" value={tasks.length} />
