@@ -1,4 +1,20 @@
 export { getSanityClient } from "./client";
-export { fetchIncompleteTasks } from "./queries";
 
-export type { Task } from "./queries";
+export {
+  fetchTasks,
+  fetchIncompleteTasks,
+  fetchWorkflowById,
+  fetchActiveWorkflows,
+  fetchWorkflowExecutions,
+  fetchExecutionById,
+  fetchWorkflowLogs,
+  fetchWorkflowTemplates,
+} from "./queries";
+
+export type {
+  Task,
+  Workflow,
+  WorkflowExecution,
+  WorkflowLog,
+  WorkflowTemplate,
+} from "./queries";
