@@ -1,4 +1,3 @@
-
 import { getSanityClient } from "@autoflow/sanity-client";
 import { getAction, type ActionContext } from "./registry";
 import { registerBuiltInActions } from "./registerBuiltInActions";
@@ -15,14 +14,22 @@ type ExecuteWorkflowInput = {
   workflowId: string;
 };
 
-export async function executeWorkflow({
-  workflowId,
-}: ExecuteWorkflowInput) {
+export class WorkflowExecutionError extends Error {
+  constructor(
+    message: string,
+    public readonly executionId: string,
+  ) {
+    super(message);
+    this.name = "WorkflowExecutionError";
+  }
+}
+
+export async function executeWorkflow({ workflowId }: ExecuteWorkflowInput) {
   const client = getSanityClient();
 
   const workflow = await client.fetch(
     `*[_type == "workflow" && _id == $id][0]`,
-    { id: workflowId }
+    { id: workflowId },
   );
 
   if (!workflow) {
@@ -59,12 +66,11 @@ export async function executeWorkflow({
         stepId: step.stepId,
         level: "info",
         message: `Starting step: ${step.name}`,
+        createdAt: new Date().toISOString(),
       });
 
       if (step.type !== "action" || !step.action) {
-        throw new Error(
-          `Step "${step.name}" is not a supported action yet.`
-        );
+        throw new Error(`Step "${step.name}" is not a supported action yet.`);
       }
 
       const config: unknown = JSON.parse(step.config || "{}");
@@ -82,6 +88,9 @@ export async function executeWorkflow({
       const context: ActionContext = {
         config: config as Record<string, unknown>,
         previousOutput,
+        workflowId,
+        executionId: execution._id,
+        stepId: step.stepId,
       };
 
       previousOutput = await handler(context);
@@ -95,15 +104,19 @@ export async function executeWorkflow({
         stepId: step.stepId,
         level: "info",
         message: `Completed step: ${step.name}`,
+        createdAt: new Date().toISOString(),
       });
     }
 
     await client
-      .patch(execution._id)
-      .set({
-        status: "completed",
-        completedAt: new Date().toISOString(),
+      .transaction()
+      .patch(execution._id, {
+        set: {
+          status: "completed",
+          completedAt: new Date().toISOString(),
+        },
       })
+      .patch(workflowId, { set: { lastExecutedAt: new Date().toISOString() } })
       .commit();
 
     return {
@@ -115,25 +128,34 @@ export async function executeWorkflow({
     const message =
       error instanceof Error ? error.message : "Workflow execution failed.";
 
-    await client.create({
-      _type: "workflowLog",
-      execution: {
-        _type: "reference",
-        _ref: execution._id,
-      },
-      level: "error",
-      message,
-    });
+    const persistence = await Promise.allSettled([
+      client.create({
+        _type: "workflowLog",
+        execution: {
+          _type: "reference",
+          _ref: execution._id,
+        },
+        level: "error",
+        message,
+        createdAt: new Date().toISOString(),
+      }),
 
-    await client
-      .patch(execution._id)
-      .set({
-        status: "failed",
-        completedAt: new Date().toISOString(),
-        error: message,
-      })
-      .commit();
+      client
+        .patch(execution._id)
+        .set({
+          status: "failed",
+          completedAt: new Date().toISOString(),
+          error: message,
+        })
+        .commit(),
+    ]);
 
-    throw error;
+    for (const result of persistence) {
+      if (result.status === "rejected") {
+        console.error("Unable to persist workflow failure:", result.reason);
+      }
+    }
+
+    throw new WorkflowExecutionError(message, execution._id);
   }
 }
