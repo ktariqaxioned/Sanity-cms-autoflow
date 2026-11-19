@@ -1,105 +1,191 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Flag, LoaderCircle, Plus, X } from "lucide-react";
 
-export default function TaskForm() {
+const priorities = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "urgent", label: "Urgent" },
+] as const;
+
+export default function TaskForm({
+  onCancel,
+  onCreated,
+}: {
+  onCancel?: () => void;
+  onCreated?: () => void;
+}) {
   const router = useRouter();
-
+  const saving = useRef(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (saving.current) return;
     if (!title.trim()) {
-      setError("Task title is required.");
+      setError("Give your task a title before adding it.");
       return;
     }
-
+    saving.current = true;
     setLoading(true);
     setError("");
-
+    let created = false;
     try {
       const response = await fetch("/api/tasks", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title,
-          description,
+          title: title.trim(),
+          description: description.trim(),
           priority,
         }),
       });
-
       const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Unable to create task.");
-      }
-
+      if (!response.ok || !result.success)
+        throw new Error(
+          result.message || "Your task couldn’t be added. Please try again.",
+        );
       setTitle("");
       setDescription("");
       setPriority("medium");
-
+      created = true;
       router.refresh();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Something went wrong."
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
       );
     } finally {
+      saving.current = false;
       setLoading(false);
     }
+    if (created) onCreated?.();
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="mb-8 space-y-4 rounded-xl border border-gray-800 bg-gray-900 p-6"
+    <section
+      id="new-task-form"
+      className="wf-panel af-task-composer"
+      aria-labelledby="new-task-heading"
     >
-      <h2 className="text-xl font-semibold">Create New Task</h2>
-
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="What needs to be done?"
-        maxLength={200}
-        className="w-full rounded-lg border border-gray-700 bg-gray-950 p-3 text-white outline-none focus:border-blue-500"
-      />
-
-      <textarea
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Task description..."
-        maxLength={2000}
-        rows={3}
-        className="w-full rounded-lg border border-gray-700 bg-gray-950 p-3 text-white outline-none focus:border-blue-500"
-      />
-
-      <select
-        value={priority}
-        onChange={(e) => setPriority(e.target.value)}
-        className="w-full rounded-lg border border-gray-700 bg-gray-950 p-3 text-white"
-      >
-        <option value="low">Low Priority</option>
-        <option value="medium">Medium Priority</option>
-        <option value="high">High Priority</option>
-        <option value="urgent">Urgent</option>
-      </select>
-
-      {error && <p className="text-sm text-red-400">{error}</p>}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-lg bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-500 disabled:opacity-50"
-      >
-        {loading ? "Creating..." : "Create Task"}
-      </button>
-    </form>
+      <div className="wf-panel-heading">
+        <div>
+          <p className="wf-eyebrow">Off your mind, into your workspace</p>
+          <h2 id="new-task-heading">Add a task</h2>
+        </div>
+        {onCancel && (
+          <button
+            className="wf-icon-button"
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            aria-label="Close task form"
+          >
+            <X size={17} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+      <form onSubmit={handleSubmit} aria-busy={loading}>
+        <fieldset disabled={loading} className="af-composer-fields">
+          <legend className="wf-sr-only">New task details</legend>
+          <label className="wf-field">
+            <span>
+              What needs to be done? <span className="wf-required">*</span>
+            </span>
+            <input
+              required
+              autoFocus
+              maxLength={200}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="e.g. Review this week’s project priorities"
+            />
+          </label>
+          <label className="wf-field">
+            <span>
+              A little more context{" "}
+              <span className="wf-optional">Optional</span>
+            </span>
+            <textarea
+              maxLength={2000}
+              rows={3}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Add a note, a next step, or anything you’ll want to remember."
+            />
+          </label>
+          <fieldset className="af-priority-picker">
+            <legend>Priority</legend>
+            <div>
+              {priorities.map((item) => (
+                <label
+                  key={item.value}
+                  data-priority={item.value}
+                  data-selected={priority === item.value}
+                >
+                  <input
+                    type="radio"
+                    name="task-priority"
+                    value={item.value}
+                    checked={priority === item.value}
+                    onChange={() => setPriority(item.value)}
+                  />
+                  <Flag size={13} aria-hidden="true" />
+                  {item.label}
+                </label>
+              ))}
+            </div>
+            <p>
+              High-priority tasks appear in your task report while they’re
+              incomplete. Urgent is a separate priority.
+            </p>
+          </fieldset>
+        </fieldset>
+        <div className="af-composer-footer">
+          {error && (
+            <p className="wf-form-error" role="alert">
+              {error}
+            </p>
+          )}
+          <span>New tasks start as Incomplete.</span>
+          <div>
+            {onCancel && (
+              <button
+                type="button"
+                className="wf-button wf-button-ghost"
+                onClick={onCancel}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="wf-button wf-button-primary"
+            >
+              {loading ? (
+                <LoaderCircle
+                  size={15}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Plus size={16} aria-hidden="true" />
+              )}
+              {loading ? "Adding task…" : "Add task"}
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
   );
 }
