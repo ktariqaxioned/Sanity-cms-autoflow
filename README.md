@@ -4,6 +4,10 @@ AutoFlow is a personal workflow automation application built with Next.js, Bun, 
 
 The first manual automation is implemented: generate and save a report of incomplete high-priority tasks. Open `/reports` to run it and browse saved reports.
 
+Open `/workflows` to search and filter workflows, run supported actions, or create a workflow with the guided form. Workflow details show the step sequence and recent runs, with links to saved reports. Scheduled and document-event triggers are marked as coming later.
+
+Tasks, Workflows, and Reports share the same responsive workspace navigation and visual style. Tasks has search, status and priority filters, and an inline creation form. Reports has searchable history and saved snapshot details. Counts and filters on these screens apply to the latest 50 loaded tasks or reports.
+
 See [Manual task reports](docs/TASK_REPORTS.md) for setup, usage, limits, and verification. Sanity remains the only persistent application data store.
 
 ## Original starter reference

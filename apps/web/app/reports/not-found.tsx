@@ -1,17 +1,18 @@
 import Link from "next/link";
+import { ArrowLeft, FileText } from "lucide-react";
 
 export default function ReportNotFound() {
   return (
-    <main className="min-h-screen bg-black px-4 py-12 text-white">
-      <div className="mx-auto max-w-xl space-y-4">
-        <h1 className="text-2xl font-semibold">Report not found</h1>
-        <p className="text-gray-400">
-          This report may have been removed, or the link is incorrect.
-        </p>
-        <Link href="/reports" className="inline-block text-blue-400 underline">
-          Back to saved reports
-        </Link>
-      </div>
-    </main>
+    <div className="wf-empty">
+      <span className="wf-empty-icon">
+        <FileText size={28} aria-hidden="true" />
+      </span>
+      <h1>Report not found.</h1>
+      <p>This report may have been removed, or the link may be incorrect.</p>
+      <Link href="/reports" className="wf-button wf-button-primary">
+        <ArrowLeft size={15} aria-hidden="true" />
+        Back to reports
+      </Link>
+    </div>
   );
 }

@@ -2,8 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { fetchTaskReportById } from "@autoflow/sanity-client";
-import ReportNavigation from "../ReportNavigation";
-import RunWorkflowButton from "../../workflows/RunWorkflowButton";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  Hand,
+  LockKeyhole,
+} from "lucide-react";
+import RunWorkflowButton from "@/components/workspace/RunWorkflowButton";
+import { TaskPriority } from "@/components/workspace/TaskBadges";
+import { formatDate } from "@/components/workspace/format";
 
 export default async function ReportPage({
   params,
@@ -16,95 +28,169 @@ export default async function ReportPage({
   if (!report) notFound();
 
   return (
-    <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-8">
-      <div className="mx-auto max-w-4xl">
-        <ReportNavigation />
-        <Link href="/reports" className="text-sm text-blue-400 hover:underline">
-          ← All saved reports
-        </Link>
-        <header className="mt-6">
-          <p className="text-sm font-medium text-green-400">Saved report</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            {report.title}
-          </h1>
-          <time
-            dateTime={report.createdAt}
-            className="mt-3 block text-sm text-gray-400"
-          >
-            Generated{" "}
-            {new Date(report.createdAt).toLocaleString("en-IN", {
-              timeZone: "Asia/Kolkata",
-              dateStyle: "long",
-              timeStyle: "short",
-            })}{" "}
-            IST
-          </time>
-        </header>
-        <section
-          aria-label="Report summary"
-          className="mt-7 rounded-xl border border-gray-800 bg-gray-900 p-6"
-        >
-          <p className="text-lg leading-7">{report.summary}</p>
-          <p className="mt-3 text-sm text-gray-400">
-            This is a snapshot from when the workflow ran. Editing or completing
-            a task later won&apos;t change this report.
-          </p>
-        </section>
-        <section aria-labelledby="report-tasks-heading" className="mt-8">
-          <h2 id="report-tasks-heading" className="text-xl font-semibold">
-            Tasks in this report ({report.taskCount})
-          </h2>
-          {report.tasks.length === 0 ? (
-            <p className="mt-4 rounded-xl border border-gray-800 p-6 text-gray-300">
-              No incomplete high-priority tasks were found. There&apos;s nothing
-              to follow up on in this report.
+    <>
+      <Link href="/reports" className="wf-back-link">
+        <ArrowLeft size={15} aria-hidden="true" />
+        All reports
+      </Link>
+      <header className="wf-page-heading wf-detail-heading">
+        <div className="wf-detail-title">
+          <span className="wf-workflow-icon">
+            <FileText size={23} aria-hidden="true" />
+          </span>
+          <div>
+            <div className="wf-heading-with-badge">
+              <h1>{report.title}</h1>
+              <span className="af-saved-label">
+                <Check size={12} aria-hidden="true" />
+                Saved
+              </span>
+            </div>
+            <p>
+              <time dateTime={report.createdAt}>
+                Generated {formatDate(report.createdAt)}
+              </time>
             </p>
-          ) : (
-            <ol className="mt-4 space-y-3">
-              {report.tasks.map((task, index) => (
-                <li
-                  key={task._key}
-                  className="flex gap-4 rounded-xl border border-gray-800 bg-gray-900 p-5"
-                >
-                  <span className="text-gray-500">{index + 1}.</span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="break-words font-medium">{task.title}</h3>
-                    <p className="mt-2 text-sm text-amber-300">
-                      High priority · Incomplete at report time
-                    </p>
-                    {task.dueDate && (
-                      <p className="mt-2 text-sm text-gray-400">
-                        Due{" "}
-                        {new Date(task.dueDate).toLocaleDateString("en-IN", {
-                          timeZone: "Asia/Kolkata",
-                        })}
-                      </p>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
-        <section
-          aria-label="Report actions"
-          className="mt-8 space-y-4 border-t border-gray-800 pt-6"
-        >
-          <p className="text-sm text-gray-400">
-            Want an updated snapshot? Generate a new report.
-          </p>
+          </div>
+        </div>
+        <div className="wf-detail-actions">
           <RunWorkflowButton />
-          <Link
-            href={`/workflows/${encodeURIComponent(report.workflow._ref)}`}
-            className="inline-block text-sm text-blue-400 hover:underline"
+        </div>
+      </header>
+      <div className="wf-detail-grid">
+        <div>
+          <section
+            className="af-report-summary"
+            aria-labelledby="report-summary-heading"
           >
-            View the workflow
-          </Link>
-          <p className="break-all text-xs text-gray-500">
-            Execution: {report.execution._ref}
-          </p>
-        </section>
+            <span className="wf-eyebrow">Your priorities at a glance</span>
+            <div className="af-summary-count">
+              <strong>{report.totalMatchingTasks}</strong>
+              <span>
+                incomplete High-priority{" "}
+                {report.totalMatchingTasks === 1 ? "task" : "tasks"}
+              </span>
+            </div>
+            <h2 id="report-summary-heading" className="wf-sr-only">
+              Report summary
+            </h2>
+            <p>{report.summary}</p>
+            <div className="af-snapshot-caption">
+              <LockKeyhole size={13} aria-hidden="true" />
+              <span>Captured when this workflow ran.</span>
+            </div>
+          </section>
+          <section
+            className="wf-panel af-snapshot-panel"
+            aria-labelledby="snapshot-tasks-heading"
+          >
+            <div className="wf-panel-heading">
+              <div>
+                <p className="wf-eyebrow">What needs your attention</p>
+                <h2 id="snapshot-tasks-heading">Tasks in this report</h2>
+              </div>
+              <span className="wf-muted-tag">{report.taskCount} included</span>
+            </div>
+            {report.tasks.length ? (
+              <ol className="af-snapshot-list">
+                {report.tasks.map((task, index) => (
+                  <li key={task._key}>
+                    <span className="wf-step-number">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <div>
+                      <h3>{task.title}</h3>
+                      <span>Incomplete at report time</span>
+                      {task.dueDate && (
+                        <p>
+                          <CalendarDays size={12} aria-hidden="true" />
+                          Due {formatDate(task.dueDate, false)}
+                        </p>
+                      )}
+                    </div>
+                    <TaskPriority priority={task.priority} />
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <div className="wf-inline-empty">
+                <CheckCircle2
+                  size={28}
+                  className="af-all-clear-icon"
+                  aria-hidden="true"
+                />
+                <h3>A little breathing room.</h3>
+                <p>
+                  No incomplete High-priority tasks were found when this report
+                  ran.
+                </p>
+              </div>
+            )}
+          </section>
+          <div className="af-snapshot-note">
+            <LockKeyhole size={17} aria-hidden="true" />
+            <p>
+              This is a saved snapshot. Editing or completing a task later
+              won&apos;t change this report. Run a new report for an updated
+              picture.
+            </p>
+          </div>
+        </div>
+        <aside className="wf-detail-aside" aria-label="Report overview">
+          <section className="wf-panel">
+            <div className="wf-panel-heading">
+              <h2>Report details</h2>
+              <FileText
+                size={17}
+                className="wf-muted-icon"
+                aria-hidden="true"
+              />
+            </div>
+            <dl className="wf-overview">
+              <div>
+                <dt>Generated</dt>
+                <dd>{formatDate(report.createdAt)}</dd>
+              </div>
+              <div>
+                <dt>Started</dt>
+                <dd>
+                  <Hand size={13} aria-hidden="true" />
+                  On demand
+                </dd>
+              </div>
+              <div>
+                <dt>Matching tasks</dt>
+                <dd>{report.totalMatchingTasks}</dd>
+              </div>
+              <div>
+                <dt>Tasks included</dt>
+                <dd>{report.taskCount}</dd>
+              </div>
+            </dl>
+            <div className="af-report-source">
+              <Link
+                href={`/workflows/${encodeURIComponent(report.workflow._ref)}`}
+                className="wf-text-link"
+              >
+                View source workflow
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </Link>
+            </div>
+          </section>
+          <section className="wf-output-note">
+            <Clock3 size={21} aria-hidden="true" />
+            <h2>Ready for a fresh perspective?</h2>
+            <p>
+              Use Run task report to create an updated snapshot. This one will
+              stay right where it is.
+            </p>
+            <Link href="/reports">
+              Browse report history
+              <ArrowUpRight size={15} aria-hidden="true" />
+            </Link>
+          </section>
+        </aside>
       </div>
-    </main>
+    </>
   );
 }
