@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { executeWorkflow } from "@autoflow/workflow-engine";
+import {
+  executeWorkflow,
+  WorkflowExecutionError,
+} from "@autoflow/workflow-engine";
 
 export const runtime = "nodejs";
 
@@ -7,17 +10,14 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function POST(
-  _request: Request,
-  { params }: RouteContext
-) {
+export async function POST(_request: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Workflow ID is required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -31,11 +31,12 @@ export async function POST(
       {
         success: false,
         message:
-          error instanceof Error
-            ? error.message
-            : "Workflow execution failed.",
+          error instanceof Error ? error.message : "Workflow execution failed.",
+        ...(error instanceof WorkflowExecutionError
+          ? { executionId: error.executionId }
+          : {}),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

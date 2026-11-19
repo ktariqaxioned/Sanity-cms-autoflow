@@ -1,5 +1,8 @@
 import Link from "next/link";
 import WorkflowActions from "./WorkflowActions";
+import ReportNavigation from "../reports/ReportNavigation";
+import { connection } from "next/server";
+import { getSanityClient } from "@autoflow/sanity-client";
 
 type Workflow = {
   _id: string;
@@ -18,25 +21,20 @@ type Workflow = {
 };
 
 async function getWorkflows(): Promise<Workflow[]> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/workflows`,
-    { cache: "no-store" },
+  return getSanityClient().fetch<Workflow[]>(
+    `*[_type == "workflow" && !(_id in path("drafts.**"))]
+      | order(_createdAt desc) { _id, name, description, status, trigger, steps, createdAt }`,
   );
-
-  if (!response.ok) {
-    throw new Error("Failed to load workflows.");
-  }
-
-  const data = await response.json();
-  return data.workflows || [];
 }
 
 export default async function WorkflowsPage() {
+  await connection();
   const workflows = await getWorkflows();
 
   return (
     <main className="min-h-screen bg-black p-8 text-white">
       <div className="mx-auto max-w-5xl">
+        <ReportNavigation />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">My Workflows</h1>

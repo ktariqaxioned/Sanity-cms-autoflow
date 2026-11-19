@@ -1,4 +1,12 @@
-# Turborepo starter
+# AutoFlow
+
+AutoFlow is a personal workflow automation application built with Next.js, Bun, Turborepo, and Sanity.
+
+The first manual automation is implemented: generate and save a report of incomplete high-priority tasks. Open `/reports` to run it and browse saved reports.
+
+See [Manual task reports](docs/TASK_REPORTS.md) for setup, usage, limits, and verification. Sanity remains the only persistent application data store.
+
+## Original starter reference
 
 This Turborepo starter is maintained by the Turborepo core team.
 

@@ -1,7 +1,28 @@
-
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSanityClient } from "@autoflow/sanity-client";
+import RunWorkflowButton from "../RunWorkflowButton";
+import ReportNavigation from "../../reports/ReportNavigation";
+
+type WorkflowDetails = {
+  _id: string;
+  name: string;
+  description?: string;
+  status: string;
+  trigger?: {
+    type: string;
+    cron?: string;
+    timezone?: string;
+    documentType?: string;
+  };
+  steps?: {
+    stepId: string;
+    name: string;
+    type: string;
+    action?: string;
+    config?: string;
+  }[];
+};
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -11,7 +32,7 @@ export default async function WorkflowDetailsPage({ params }: Props) {
   const { id } = await params;
   const client = getSanityClient();
 
-  const workflow = await client.fetch(
+  const workflow = await client.fetch<WorkflowDetails | null>(
     `*[_type == "workflow" && _id == $id][0] {
       _id,
       name,
@@ -22,7 +43,7 @@ export default async function WorkflowDetailsPage({ params }: Props) {
       createdAt,
       lastExecutedAt
     }`,
-    { id }
+    { id },
   );
 
   if (!workflow) {
@@ -32,6 +53,7 @@ export default async function WorkflowDetailsPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-black p-8 text-white">
       <div className="mx-auto max-w-4xl">
+        <ReportNavigation />
         <Link
           href="/workflows"
           className="text-sm text-gray-400 hover:text-white"
@@ -51,14 +73,15 @@ export default async function WorkflowDetailsPage({ params }: Props) {
           <p className="mt-3 text-gray-400">
             {workflow.description || "No description provided."}
           </p>
+          <div className="mt-5">
+            <RunWorkflowButton workflowId={workflow._id} />
+          </div>
         </div>
 
         <section className="mt-8 rounded-xl border border-gray-800 bg-gray-900 p-6">
           <h2 className="text-xl font-semibold">Trigger Configuration</h2>
 
-          <p className="mt-4 text-gray-300">
-            Type: {workflow.trigger?.type}
-          </p>
+          <p className="mt-4 text-gray-300">Type: {workflow.trigger?.type}</p>
 
           {workflow.trigger?.type === "schedule" && (
             <>
@@ -83,7 +106,7 @@ export default async function WorkflowDetailsPage({ params }: Props) {
             Workflow Steps ({workflow.steps?.length || 0})
           </h2>
 
-          {workflow.steps?.map((step: any, index: number) => (
+          {workflow.steps?.map((step, index) => (
             <div
               key={step.stepId}
               className="rounded-xl border border-gray-800 bg-gray-900 p-5"
@@ -92,9 +115,7 @@ export default async function WorkflowDetailsPage({ params }: Props) {
                 {index + 1}. {step.name}
               </h3>
 
-              <p className="mt-2 text-sm text-gray-400">
-                Type: {step.type}
-              </p>
+              <p className="mt-2 text-sm text-gray-400">Type: {step.type}</p>
 
               {step.action && (
                 <p className="mt-2 text-sm text-gray-400">
@@ -103,9 +124,7 @@ export default async function WorkflowDetailsPage({ params }: Props) {
               )}
 
               <div className="mt-4">
-                <p className="mb-2 text-sm text-gray-400">
-                  Configuration
-                </p>
+                <p className="mb-2 text-sm text-gray-400">Configuration</p>
 
                 <pre className="overflow-x-auto rounded-lg bg-black p-4 text-sm text-green-400">
                   {step.config || "{}"}

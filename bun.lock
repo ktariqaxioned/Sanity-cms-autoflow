@@ -118,6 +118,7 @@
       "devDependencies": {
         "@repo/typescript-config": "*",
         "@types/node": "26.4.1",
+        "groq-js": "2.0.1",
         "typescript": "7.0.2",
       },
     },
