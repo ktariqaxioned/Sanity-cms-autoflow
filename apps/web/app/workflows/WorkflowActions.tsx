@@ -9,6 +9,14 @@ import {
   Play,
   Trash2,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Props = {
   id: string;
@@ -24,7 +32,6 @@ export default function WorkflowActions({
   redirectOnDelete = false,
 }: Props) {
   const router = useRouter();
-  const menu = useRef<HTMLDetailsElement>(null);
   const busy = useRef(false);
   const [refreshing, startTransition] = useTransition();
   const [pending, setPending] = useState(false);
@@ -56,7 +63,6 @@ export default function WorkflowActions({
       const data = await response.json();
       if (!response.ok || !data.success)
         throw new Error(data.message || "Unable to update this workflow.");
-      if (menu.current) menu.current.open = false;
       startTransition(() => {
         if (kind === "delete" && redirectOnDelete) router.push("/workflows");
         router.refresh();
@@ -74,38 +80,32 @@ export default function WorkflowActions({
   }
 
   return (
-    <div className="wf-actions" aria-busy={pending || refreshing}>
-      <details
-        ref={menu}
-        className="wf-action-menu"
-        onKeyDown={(event) => {
-          if (event.key === "Escape" && menu.current) {
-            menu.current.open = false;
-            menu.current.querySelector("summary")?.focus();
-          }
-        }}
-      >
-        <summary
-          aria-label={`More actions for ${name}`}
-          title="More actions"
-          className="wf-icon-button"
-        >
-          {pending || refreshing ? (
-            <LoaderCircle
-              size={18}
-              className="animate-spin"
-              aria-hidden="true"
-            />
-          ) : (
-            <MoreHorizontal size={19} aria-hidden="true" />
-          )}
-        </summary>
-        <div className="wf-menu-options">
-          <p>Workflow actions</p>
-          <button
+    <div className="relative" aria-busy={pending || refreshing}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
+            aria-label={`More actions for ${name}`}
+            title="More actions"
+          >
+            {pending || refreshing ? (
+              <LoaderCircle
+                size={18}
+                className="animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <MoreHorizontal size={19} aria-hidden="true" />
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuLabel>Workflow actions</DropdownMenuLabel>
+          <DropdownMenuItem
             disabled={pending || refreshing}
-            onClick={() => update("status")}
+            onSelect={() => update("status")}
           >
             {status === "active" ? (
               <Pause size={15} aria-hidden="true" />
@@ -113,20 +113,22 @@ export default function WorkflowActions({
               <Play size={15} aria-hidden="true" />
             )}
             {status === "active" ? "Pause workflow" : "Activate workflow"}
-          </button>
-          <button
-            type="button"
-            className="wf-danger"
+          </DropdownMenuItem>
+          <DropdownMenuItem
             disabled={pending || refreshing}
-            onClick={() => update("delete")}
+            className="text-[#edbcb2] focus:bg-[#322522]"
+            onSelect={() => update("delete")}
           >
             <Trash2 size={15} aria-hidden="true" />
             Delete workflow
-          </button>
-        </div>
-      </details>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {error && (
-        <p role="alert" className="wf-action-error">
+        <p
+          role="alert"
+          className="absolute top-full right-0 z-20 mt-2 w-48 rounded-md border border-[#6b4842] bg-[#322522] px-2 py-1.5 text-[11px] leading-relaxed text-[#edbcb2]"
+        >
           {error}
         </p>
       )}

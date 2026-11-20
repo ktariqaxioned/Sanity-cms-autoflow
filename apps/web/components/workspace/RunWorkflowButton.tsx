@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, LoaderCircle, Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function RunWorkflowButton({
   workflowId,
@@ -58,9 +59,16 @@ export default function RunWorkflowButton({
   }
 
   return (
-    <div className={compact ? "wf-run-control" : "af-run-block"}>
-      <button
+    <div
+      className={
+        compact
+          ? "flex items-center gap-2"
+          : "grid justify-items-start gap-2.5 [&_[role=status]:empty]:hidden"
+      }
+    >
+      <Button
         type="button"
+        size={compact ? "sm" : "default"}
         onClick={run}
         disabled={running || disabled}
         aria-busy={running}
@@ -70,7 +78,6 @@ export default function RunWorkflowButton({
             ? "This workflow has no supported action steps to run yet."
             : undefined
         }
-        className={`wf-button wf-button-primary ${compact ? "wf-button-small" : ""}`}
       >
         {running ? (
           <LoaderCircle size={15} className="animate-spin" aria-hidden="true" />
@@ -84,10 +91,10 @@ export default function RunWorkflowButton({
             : workflowId
               ? "Run workflow"
               : "Run task report"}
-      </button>
+      </Button>
       <div aria-live="polite" role="status">
         {running && !compact && (
-          <p className="af-run-message">
+          <p className="max-w-[380px] text-xs leading-relaxed text-[#adb9c7]">
             {workflowId
               ? "Executing your workflow…"
               : "Finding your tasks and saving the report…"}
@@ -97,8 +104,8 @@ export default function RunWorkflowButton({
           <p
             className={
               compact
-                ? "wf-run-feedback wf-run-success"
-                : "af-run-message af-success-message"
+                ? "inline-flex items-center gap-1 text-[11px] text-[#a4ddbf]"
+                : "max-w-[380px] text-xs leading-relaxed text-[#a4ddbf]"
             }
             title={executionId}
           >
@@ -117,11 +124,13 @@ export default function RunWorkflowButton({
         <p
           role="alert"
           className={
-            compact ? "wf-run-feedback wf-run-error" : "af-inline-error"
+            compact
+              ? "text-[11px] leading-relaxed text-[#edbcb2]"
+              : "max-w-[420px] rounded-md border border-[#6b4842] bg-[#322522] px-3 py-2.5 text-xs leading-loose text-[#edbcb2]"
           }
         >
           {error}{" "}
-          <Link className="underline" href="/reports">
+          <Link className="underline underline-offset-[3px]" href="/reports">
             Check saved reports
           </Link>{" "}
           before retrying.
