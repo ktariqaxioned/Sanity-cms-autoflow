@@ -90,14 +90,23 @@ export default function WorkflowList({
             needs your attention.
           </p>
         </div>
-        <Link href="/reports" className="wf-button wf-button-secondary">
-          Open task reports
-          <ArrowUpRightIcon />
-        </Link>
-        <div className="wf-starter-decoration" aria-hidden="true">
-          <span />
-          <span />
-          <span />
+        <div className="relative z-10 ml-auto grid min-w-60 shrink-0 place-items-center self-stretch max-[760px]:ml-0 max-[760px]:min-w-0 max-[760px]:self-auto">
+          <div
+            className="pointer-events-none absolute top-1/2 left-1/2 size-[340px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#7ea48a]/18 max-[760px]:size-[280px]"
+            aria-hidden="true"
+          >
+            <span className="absolute inset-[34px] rounded-full border border-[#7ea48a]/16" />
+            <span className="absolute inset-[68px] rounded-full border border-[#7ea48a]/16" />
+            <span className="absolute inset-[102px] rounded-full border border-[#7ea48a]/16" />
+            <span className="absolute inset-[136px] rounded-full border border-[#7ea48a]/16" />
+          </div>
+          <Link
+            href="/reports"
+            className="wf-button wf-button-secondary relative z-10"
+          >
+            Open task reports
+            <ArrowUpRightIcon />
+          </Link>
         </div>
       </section>
 
