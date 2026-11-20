@@ -16,6 +16,7 @@ import {
   LoaderCircle,
   Plus,
   Save,
+  Sparkles,
   Trash2,
   Webhook,
 } from "lucide-react";
@@ -27,14 +28,69 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { actionOptions } from "../workflow-ui";
 
-type Action = "generateTaskReport" | "fetchTasks";
-type Step = { stepId: string; name: string; action: Action; limit: number };
+type Action = (typeof actionOptions)[number]["value"];
+type Step = {
+  stepId: string;
+  name: string;
+  action: Action;
+  limit: number;
+  status: "all" | "incomplete";
+  prompt: string;
+  purpose: "prioritize" | "report";
+  reportTitle: string;
+};
+const exampleInstruction =
+  "Every morning at 9 AM, find my incomplete tasks, prioritize them, and generate a productivity report.";
 const initialStep: Step = {
   stepId: "step-report",
   name: "Generate task report",
   action: "generateTaskReport",
   limit: 20,
+  status: "all",
+  prompt: "",
+  purpose: "prioritize",
+  reportTitle: "",
 };
+
+function stepConfig(step: Step) {
+  if (step.action === "fetchTasks") {
+    return { limit: step.limit, status: step.status };
+  }
+  if (step.action === "runAi") {
+    return { purpose: step.purpose, prompt: step.prompt.trim() };
+  }
+  if (step.action === "saveProductivityReport") {
+    return step.reportTitle.trim() ? { title: step.reportTitle.trim() } : {};
+  }
+  return {};
+}
+
+function stepFromGenerated(step: {
+  stepId: string;
+  name: string;
+  action: Action;
+  config?: {
+    limit?: number;
+    status?: "all" | "incomplete";
+    prompt?: string;
+    purpose?: "prioritize" | "report";
+    title?: string;
+  };
+}): Step {
+  return {
+    stepId: step.stepId,
+    name: step.name,
+    action: step.action,
+    limit:
+      typeof step.config?.limit === "number" && step.config.limit > 0
+        ? step.config.limit
+        : 20,
+    status: step.config?.status === "incomplete" ? "incomplete" : "all",
+    prompt: step.config?.prompt ?? "",
+    purpose: step.config?.purpose === "report" ? "report" : "prioritize",
+    reportTitle: step.config?.title ?? "",
+  };
+}
 
 const fieldClass = "grid gap-2 text-xs text-[#d5dbe3]";
 const hintClass = "text-[11px] leading-relaxed text-muted-foreground";
@@ -48,6 +104,8 @@ export default function WorkflowForm() {
   const [description, setDescription] = useState("");
   const [preset, setPreset] = useState("report");
   const [steps, setSteps] = useState<Step[]>([initialStep]);
+  const [instruction, setInstruction] = useState("");
+  const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -60,6 +118,10 @@ export default function WorkflowForm() {
         name: value === "report" ? "Generate task report" : "Fetch tasks",
         action: value === "report" ? "generateTaskReport" : "fetchTasks",
         limit: 20,
+        status: "all",
+        prompt: "",
+        purpose: "prioritize",
+        reportTitle: "",
       },
     ]);
     setError("");
@@ -108,6 +170,10 @@ export default function WorkflowForm() {
         setError(`Choose between 1 and 50 tasks for step ${i + 1}.`);
         return;
       }
+      if (step.action === "runAi" && !step.prompt.trim()) {
+        setError(`Write the AI instructions for step ${i + 1}.`);
+        return;
+      }
     }
     saving.current = true;
     setLoading(true);
@@ -124,12 +190,9 @@ export default function WorkflowForm() {
             _type: "workflowStep",
             stepId: step.stepId,
             name: step.name.trim(),
-            type: "action",
+            type: step.action === "runAi" ? "ai" : "action",
             action: step.action,
-            config:
-              step.action === "fetchTasks"
-                ? JSON.stringify({ limit: step.limit })
-                : "{}",
+            config: JSON.stringify(stepConfig(step)),
           })),
         }),
       });
@@ -156,14 +219,129 @@ export default function WorkflowForm() {
     }
   }
 
+  async function applyWorkflowResponse(response: Response) {
+    const data = await response.json();
+    if (!response.ok || !data.success || !Array.isArray(data.workflow?.steps)) {
+      throw new Error(data.message || "Unable to prepare this workflow.");
+    }
+    const steps = data.workflow.steps.flatMap((step: unknown) => {
+      if (
+        typeof step !== "object" ||
+        step === null ||
+        !("action" in step) ||
+        !actionOptions.some((option) => option.value === step.action)
+      ) {
+        return [];
+      }
+      return [
+        stepFromGenerated(
+          step as Parameters<typeof stepFromGenerated>[0],
+        ),
+      ];
+    });
+    if (!steps.length) throw new Error("The workflow did not include any supported steps.");
+    setName(typeof data.workflow.name === "string" ? data.workflow.name : "");
+    setDescription(
+      typeof data.workflow.description === "string" ? data.workflow.description : "",
+    );
+    setPreset("custom");
+    setSteps(steps);
+  }
+
+  async function generateWorkflow() {
+    setError("");
+    const description = instruction.trim();
+    if (description.length < 12) {
+      setError("Describe the automation in at least a short sentence.");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const response = await fetch("/api/ai/workflows", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description }),
+      });
+      await applyWorkflowResponse(response);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to generate a workflow.",
+      );
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function loadMorningWorkflow() {
+    setError("");
+    setGenerating(true);
+    try {
+      const response = await fetch("/api/ai/workflows");
+      await applyWorkflowResponse(response);
+      setInstruction(exampleInstruction);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load the morning report workflow.",
+      );
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
       className="grid grid-cols-[minmax(0,1fr)_280px] items-start gap-6 max-[1200px]:grid-cols-[minmax(0,1fr)_235px] max-[1200px]:gap-5 max-[1020px]:grid-cols-1"
       aria-busy={loading}
     >
-      <fieldset disabled={loading} className="grid min-w-0 gap-6 border-0 p-0">
+      <fieldset disabled={loading || generating} className="grid min-w-0 gap-6 border-0 p-0">
         <legend className="sr-only">Workflow configuration</legend>
+        <Card className="gap-0 rounded-[11px] bg-card py-0 ring-[#2b3039]">
+          <CardHeader className="border-b border-[#292e37] px-6 py-[22px]">
+            <p className="mb-1 text-[9px] font-semibold tracking-[0.18em] text-[#929ba7] uppercase">
+              Describe it
+            </p>
+            <h2 className="text-sm font-medium">Start from a sentence</h2>
+          </CardHeader>
+          <CardContent className="grid gap-4 p-5">
+            <label className={fieldClass}>
+              <span>What should this automation do?</span>
+              <Textarea
+                value={instruction}
+                onChange={(event) => setInstruction(event.target.value)}
+                maxLength={2000}
+                rows={4}
+                placeholder={exampleInstruction}
+              />
+              <small className={hintClass}>
+                AutoFlow turns this into steps you can review. Scheduled wording
+                is saved as a note; runs start when you click Run.
+              </small>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={generateWorkflow} disabled={generating}>
+                {generating ? (
+                  <LoaderCircle size={15} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <Sparkles size={15} aria-hidden="true" />
+                )}
+                Generate workflow
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setInstruction(exampleInstruction)}
+              >
+                Use example
+              </Button>
+              <Button type="button" variant="ghost" onClick={loadMorningWorkflow}>
+                Review morning report
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
         <Card className="gap-0 rounded-[11px] bg-card py-0 ring-[#2b3039]">
           <CardHeader className="flex-row items-center justify-between border-b border-[#292e37] px-6 py-[22px]">
             <div>
@@ -382,23 +560,89 @@ export default function WorkflowForm() {
                   />
                 </label>
                 {step.action === "fetchTasks" ? (
-                  <label className={cn(fieldClass, "max-w-40")}>
-                    <span>Maximum tasks</span>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className={fieldClass}>
+                      <span>Which tasks</span>
+                      <select
+                        className={selectClass}
+                        value={step.status}
+                        onChange={(event) =>
+                          updateStep(index, {
+                            status:
+                              event.target.value === "incomplete"
+                                ? "incomplete"
+                                : "all",
+                          })
+                        }
+                      >
+                        <option value="all">Non-archived tasks</option>
+                        <option value="incomplete">Incomplete tasks</option>
+                      </select>
+                    </label>
+                    <label className={fieldClass}>
+                      <span>Maximum tasks</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={50}
+                        step={1}
+                        required
+                        value={step.limit || ""}
+                        onChange={(event) =>
+                          updateStep(index, {
+                            limit: event.target.valueAsNumber || 0,
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+                ) : step.action === "runAi" ? (
+                  <div className="grid gap-4">
+                    <label className={fieldClass}>
+                      <span>AI result</span>
+                      <select
+                        className={selectClass}
+                        value={step.purpose}
+                        onChange={(event) =>
+                          updateStep(index, {
+                            purpose:
+                              event.target.value === "report"
+                                ? "report"
+                                : "prioritize",
+                          })
+                        }
+                      >
+                        <option value="prioritize">Prioritize tasks</option>
+                        <option value="report">Write a report</option>
+                      </select>
+                    </label>
+                    <label className={fieldClass}>
+                      <span>Instructions</span>
+                      <Textarea
+                        required
+                        maxLength={4000}
+                        rows={4}
+                        value={step.prompt}
+                        onChange={(event) =>
+                          updateStep(index, { prompt: event.target.value })
+                        }
+                        placeholder="Explain how to use the previous step’s data."
+                      />
+                    </label>
+                  </div>
+                ) : step.action === "saveProductivityReport" ? (
+                  <label className={fieldClass}>
+                    <span>Report title</span>
                     <Input
-                      type="number"
-                      min={1}
-                      max={50}
-                      step={1}
-                      required
-                      value={step.limit || ""}
+                      maxLength={120}
+                      value={step.reportTitle}
                       onChange={(event) =>
-                        updateStep(index, {
-                          limit: event.target.valueAsNumber || 0,
-                        })
+                        updateStep(index, { reportTitle: event.target.value })
                       }
+                      placeholder="Morning productivity report"
                     />
                     <small className={hintClass}>
-                      Choose up to 50 non-archived tasks.
+                      Saves the report written by the previous AI step.
                     </small>
                   </label>
                 ) : (
@@ -433,6 +677,10 @@ export default function WorkflowForm() {
                     name: "Fetch tasks",
                     action: "fetchTasks",
                     limit: 20,
+                    status: "all",
+                    prompt: "",
+                    purpose: "prioritize",
+                    reportTitle: "",
                   },
                 ])
               }
@@ -484,10 +732,12 @@ export default function WorkflowForm() {
                   className="relative flex gap-3 pb-4 last:pb-0 last:before:hidden before:absolute before:top-8 before:bottom-0 before:left-4 before:w-px before:bg-[#384139]"
                 >
                   <span className="relative z-10 grid size-8 shrink-0 place-items-center rounded-lg border border-[#3d4943] bg-[#242d28] text-[#b0ccbc]">
-                    {step.action === "generateTaskReport" ? (
-                      <FileText size={15} aria-hidden="true" />
-                    ) : (
+                    {step.action === "runAi" ? (
+                      <Sparkles size={15} aria-hidden="true" />
+                    ) : step.action === "fetchTasks" ? (
                       <ListTodo size={15} aria-hidden="true" />
+                    ) : (
+                      <FileText size={15} aria-hidden="true" />
                     )}
                   </span>
                   <div>

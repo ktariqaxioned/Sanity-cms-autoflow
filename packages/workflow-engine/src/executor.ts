@@ -1,4 +1,5 @@
 import { getSanityClient } from "@autoflow/sanity-client";
+import { readActionConfig, workflowActions } from "./definition";
 import { getAction, type ActionContext } from "./registry";
 import { registerBuiltInActions } from "./registerBuiltInActions";
 
@@ -55,6 +56,7 @@ export async function executeWorkflow({ workflowId }: ExecuteWorkflowInput) {
     registerBuiltInActions();
 
     let previousOutput: unknown = undefined;
+    const outputs: Record<string, unknown> = {};
 
     for (const step of workflow.steps as WorkflowStep[]) {
       await client.create({
@@ -69,31 +71,40 @@ export async function executeWorkflow({ workflowId }: ExecuteWorkflowInput) {
         createdAt: new Date().toISOString(),
       });
 
-      if (step.type !== "action" || !step.action) {
+      if (step.type === "condition") {
+        throw new Error(
+          `Step "${step.name}" is a condition. Condition steps are not executable yet.`,
+        );
+      }
+      if (
+        (step.type !== "action" && step.type !== "ai") ||
+        !step.action ||
+        !workflowActions.includes(
+          step.action as (typeof workflowActions)[number],
+        )
+      ) {
         throw new Error(`Step "${step.name}" is not a supported action yet.`);
       }
-
-      const config: unknown = JSON.parse(step.config || "{}");
-
-      if (
-        typeof config !== "object" ||
-        config === null ||
-        Array.isArray(config)
-      ) {
-        throw new Error(`Invalid configuration in step "${step.name}".`);
+      if (step.type === "ai" && step.action !== "runAi") {
+        throw new Error(`Step "${step.name}" is not a supported AI action.`);
+      }
+      if (step.type === "action" && step.action === "runAi") {
+        throw new Error(`Step "${step.name}" must use the AI step type.`);
       }
 
+      const config = readActionConfig(step.action, step.config);
       const handler = getAction(step.action);
-
       const context: ActionContext = {
-        config: config as Record<string, unknown>,
+        config,
         previousOutput,
+        outputs,
         workflowId,
         executionId: execution._id,
         stepId: step.stepId,
       };
 
       previousOutput = await handler(context);
+      outputs[step.stepId] = previousOutput;
 
       await client.create({
         _type: "workflowLog",
@@ -103,7 +114,7 @@ export async function executeWorkflow({ workflowId }: ExecuteWorkflowInput) {
         },
         stepId: step.stepId,
         level: "info",
-        message: `Completed step: ${step.name}`,
+        message: `Completed step: ${step.name}. ${summarizeOutput(previousOutput)}`,
         createdAt: new Date().toISOString(),
       });
     }
@@ -114,6 +125,7 @@ export async function executeWorkflow({ workflowId }: ExecuteWorkflowInput) {
         set: {
           status: "completed",
           completedAt: new Date().toISOString(),
+          result: JSON.stringify(previousOutput).slice(0, 12_000),
         },
       })
       .patch(workflowId, { set: { lastExecutedAt: new Date().toISOString() } })
@@ -158,4 +170,21 @@ export async function executeWorkflow({ workflowId }: ExecuteWorkflowInput) {
 
     throw new WorkflowExecutionError(message, execution._id);
   }
+}
+
+function summarizeOutput(output: unknown) {
+  if (typeof output !== "object" || output === null) return "Finished.";
+  if ("count" in output && typeof output.count === "number") {
+    return `Fetched ${output.count} ${output.count === 1 ? "task" : "tasks"}.`;
+  }
+  if ("reportId" in output && typeof output.reportId === "string") {
+    return "Saved the report.";
+  }
+  if ("priorities" in output && Array.isArray(output.priorities)) {
+    return `Ranked ${output.priorities.length} ${output.priorities.length === 1 ? "task" : "tasks"}.`;
+  }
+  if ("report" in output && typeof output.report === "string") {
+    return "Wrote the productivity report.";
+  }
+  return "Finished.";
 }

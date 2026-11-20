@@ -1,6 +1,7 @@
 export type ActionContext = {
   config: Record<string, unknown>;
   previousOutput?: unknown;
+  outputs?: Record<string, unknown>;
   workflowId?: string;
   executionId?: string;
   stepId?: string;

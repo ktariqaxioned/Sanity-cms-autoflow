@@ -22,6 +22,7 @@ export interface TaskReportSummary {
 }
 
 export interface TaskReport extends TaskReportSummary {
+  body?: string;
   tasks: ReportTask[];
   workflow: { _ref: string };
   execution: { _ref: string };
@@ -74,7 +75,7 @@ export function fetchTaskReports() {
 export function fetchTaskReportById(id: string) {
   return getSanityClient().fetch<TaskReport | null>(
     `*[_type == "taskReport" && _id == $id][0] {
-      _id, title, createdAt, taskCount, totalMatchingTasks, summary,
+      _id, title, createdAt, taskCount, totalMatchingTasks, summary, body,
       tasks, workflow, execution
     }`,
     { id },

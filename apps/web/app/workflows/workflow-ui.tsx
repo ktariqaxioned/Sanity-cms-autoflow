@@ -3,6 +3,7 @@ import {
   FileText,
   Hand,
   ListTodo,
+  Sparkles,
   Webhook,
   Workflow,
 } from "lucide-react";
@@ -39,12 +40,29 @@ export const actionOptions = [
     description:
       "Find incomplete High-priority tasks and save a report you can return to.",
     icon: FileText,
+    type: "action",
   },
   {
     value: "fetchTasks",
     label: "Fetch tasks",
-    description: "Retrieve your non-archived tasks for this workflow.",
+    description: "Retrieve tasks for the next step. You can limit this to incomplete tasks.",
     icon: ListTodo,
+    type: "action",
+  },
+  {
+    value: "runAi",
+    label: "AI processing",
+    description:
+      "Send the previous step’s data to Gemini and return structured priorities or a report.",
+    icon: Sparkles,
+    type: "ai",
+  },
+  {
+    value: "saveProductivityReport",
+    label: "Save productivity report",
+    description: "Save the AI-written report in your workspace.",
+    icon: FileText,
+    type: "action",
   },
 ] as const;
 
@@ -124,21 +142,18 @@ export function formatWorkflowDate(value?: string) {
 export function stepDescription(step: WorkflowStep) {
   return (
     actionOptions.find((action) => action.value === step.action)?.description ??
-    (step.type === "ai"
-      ? "An AI processing step. Execution support is coming later."
-      : step.type === "condition"
-        ? "A decision step. Execution support is coming later."
-        : "A configured workflow action.")
+    (step.type === "condition"
+      ? "A decision step. Execution support is coming later."
+      : "A configured workflow action.")
   );
 }
 
 export function canRunWorkflow(steps?: WorkflowStep[]) {
   return Boolean(
     steps?.length &&
-    steps.every(
-      (step) =>
-        step.type === "action" &&
-        actionOptions.some((action) => action.value === step.action),
-    ),
+      steps.every((step) => {
+        const option = actionOptions.find((action) => action.value === step.action);
+        return option?.type === step.type;
+      }),
   );
 }

@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   CheckSquare,
   ChevronRight,
+  Clock3,
   FileText,
   GitBranch,
   Layers,
@@ -11,11 +12,12 @@ import {
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type Section = "workflows" | "tasks" | "reports";
+type Section = "workflows" | "tasks" | "reports" | "executions";
 const navigation = [
   { key: "workflows", href: "/workflows", label: "Workflows", icon: GitBranch },
   { key: "tasks", href: "/tasks", label: "Tasks", icon: CheckSquare },
   { key: "reports", href: "/reports", label: "Reports", icon: FileText },
+  { key: "executions", href: "/executions", label: "History", icon: Clock3 },
 ] as const;
 
 export default function WorkspaceShell({
