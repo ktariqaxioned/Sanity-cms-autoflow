@@ -49,6 +49,14 @@ export const workflowExecutionType = defineType({
     }),
 
     defineField({
+      name: "result",
+      title: "Result",
+      type: "text",
+      description: "Bounded JSON result recorded by the workflow engine",
+      readOnly: true,
+    }),
+
+    defineField({
       name: "attempt",
       title: "Attempt Number",
       type: "number",

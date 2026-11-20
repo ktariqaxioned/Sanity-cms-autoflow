@@ -82,7 +82,7 @@ export default async function ReportPage({
                 {report.totalMatchingTasks}
               </strong>
               <span className="pb-1 text-sm text-[#c5ddd2]">
-                incomplete High-priority{" "}
+                {report.body ? "incomplete" : "incomplete High-priority"}{" "}
                 {report.totalMatchingTasks === 1 ? "task" : "tasks"}
               </span>
             </div>
@@ -92,6 +92,11 @@ export default async function ReportPage({
             <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#d5e6dc]">
               {report.summary}
             </p>
+            {report.body && (
+              <div className="mt-5 max-w-2xl whitespace-pre-wrap text-sm leading-relaxed text-[#e7f3ec]">
+                {report.body}
+              </div>
+            )}
             <div className="mt-4 inline-flex items-center gap-2 text-[11px] text-[#9bb3a8]">
               <LockKeyhole size={13} aria-hidden="true" />
               <span>Captured when this workflow ran.</span>

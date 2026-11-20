@@ -14,6 +14,12 @@ export const taskReportType = defineType({
     }),
     defineField({name: 'summary', title: 'Summary', type: 'text', validation: (r) => r.required()}),
     defineField({
+      name: 'body',
+      title: 'Report',
+      type: 'text',
+      description: 'Readable report written by an AI workflow step',
+    }),
+    defineField({
       name: 'taskCount',
       title: 'Tasks included',
       type: 'number',

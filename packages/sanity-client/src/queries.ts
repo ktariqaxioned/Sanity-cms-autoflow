@@ -28,6 +28,7 @@ export interface WorkflowExecution {
   startedAt?: string;
   completedAt?: string;
   error?: string;
+  result?: string;
 }
 
 export interface WorkflowLog {
@@ -144,7 +145,8 @@ export async function fetchWorkflowExecutions(
         status,
         startedAt,
         completedAt,
-        error
+        error,
+        result
       }`,
     {
       workflowId: workflowId ?? null,
@@ -164,7 +166,8 @@ export async function fetchExecutionById(id: string) {
       status,
       startedAt,
       completedAt,
-      error
+      error,
+      result
     }`,
     { id }
   );

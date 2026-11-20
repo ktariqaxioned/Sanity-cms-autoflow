@@ -13,6 +13,7 @@ import {
   FileText,
   Hand,
   ListTodo,
+  Sparkles,
   Workflow,
   XCircle,
 } from "lucide-react";
@@ -99,8 +100,9 @@ export default async function WorkflowDetailsPage({
       </header>
       {!runnable && (
         <p className="mb-6 rounded-lg border border-[#514630] bg-[#322c20] px-4 py-3 text-xs leading-relaxed text-[#d4bb89]">
-          This workflow contains steps that aren&apos;t available yet. Workflows
-          using Fetch tasks and Generate task report can run now.
+          This workflow contains steps that aren&apos;t available yet. Fetch tasks,
+          AI processing, saving a productivity report, and generating a task
+          report can run now.
         </p>
       )}
       <div className="grid grid-cols-[minmax(0,1fr)_260px] items-start gap-6 max-[1200px]:grid-cols-[minmax(0,1fr)_225px] max-[1200px]:gap-4 max-[1020px]:grid-cols-1">
@@ -145,11 +147,14 @@ export default async function WorkflowDetailsPage({
                 </li>
                 {steps.map((step, index) => {
                   const Icon =
-                    step.action === "generateTaskReport"
+                    step.action === "generateTaskReport" ||
+                    step.action === "saveProductivityReport"
                       ? FileText
                       : step.action === "fetchTasks"
                         ? ListTodo
-                        : Workflow;
+                        : step.action === "runAi"
+                          ? Sparkles
+                          : Workflow;
                   return (
                     <li
                       key={step.stepId}
@@ -165,7 +170,7 @@ export default async function WorkflowDetailsPage({
                           </span>
                           <span className="text-[10px] tracking-wide text-[#8796a5] uppercase">
                             {step.type === "ai"
-                              ? "AI processing · coming later"
+                              ? "AI processing"
                               : step.type === "condition"
                                 ? "Condition · coming later"
                                 : "Action"}
@@ -270,15 +275,24 @@ export default async function WorkflowDetailsPage({
                             </p>
                           )}
                         </div>
-                        {execution.reportId && (
+                        <div className="flex flex-col items-end gap-1">
                           <Link
-                            href={`/reports/${encodeURIComponent(execution.reportId)}`}
+                            href={`/executions/${encodeURIComponent(execution._id)}`}
                             className="inline-flex items-center gap-1 text-xs text-[#a4e5d2] hover:text-primary"
                           >
-                            View report
+                            View run
                             <ArrowUpRight size={14} aria-hidden="true" />
                           </Link>
-                        )}
+                          {execution.reportId && (
+                            <Link
+                              href={`/reports/${encodeURIComponent(execution.reportId)}`}
+                              className="inline-flex items-center gap-1 text-xs text-[#a4e5d2] hover:text-primary"
+                            >
+                              View report
+                              <ArrowUpRight size={14} aria-hidden="true" />
+                            </Link>
+                          )}
+                        </div>
                       </li>
                     );
                   })}

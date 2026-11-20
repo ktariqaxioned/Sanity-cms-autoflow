@@ -115,7 +115,15 @@ export default function RunWorkflowButton({
                 Run complete
               </>
             ) : (
-              <>Workflow completed. Execution: {executionId}</>
+              <>
+                Workflow completed.{" "}
+                <Link
+                  className="underline underline-offset-[3px]"
+                  href={`/executions/${encodeURIComponent(executionId)}`}
+                >
+                  View this run
+                </Link>
+              </>
             )}
           </p>
         )}

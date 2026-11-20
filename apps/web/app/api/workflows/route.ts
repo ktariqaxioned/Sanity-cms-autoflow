@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createWorkflow, CreateWorkflowInput } from "@autoflow/sanity-client";
+import { createWorkflow } from "@autoflow/sanity-client";
 import { getSanityClient } from "@autoflow/sanity-client";
+import { validateGeneratedWorkflow } from "@autoflow/workflow-engine";
 
 export const runtime = "nodejs";
 
@@ -56,15 +57,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const description =
+      "description" in body && typeof body.description === "string"
+        ? body.description
+        : undefined;
+    const draft = toWorkflowDraft(body.name, description, body.trigger, body.steps);
+    const validated = validateGeneratedWorkflow(draft);
+    if (!validated.success) {
+      return NextResponse.json(
+        { success: false, message: validated.message },
+        { status: 400 },
+      );
+    }
+
     const workflow = await createWorkflow({
-      name: body.name,
-      description:
-        "description" in body &&
-        typeof body.description === "string"
-          ? body.description
-          : undefined,
-      trigger: body.trigger as CreateWorkflowInput["trigger"],
-      steps: body.steps as CreateWorkflowInput["steps"],
+      name: validated.workflow.name,
+      description: validated.workflow.description,
+      trigger: validated.workflow.trigger,
+      steps: validated.workflow.steps.map((step) => ({
+        stepId: step.stepId,
+        name: step.name,
+        type: step.type,
+        action: step.action,
+        config: JSON.stringify(step.config ?? {}),
+      })),
     });
 
     return NextResponse.json(
@@ -84,5 +100,52 @@ export async function POST(request: NextRequest) {
       },
       { status: 400 }
     );
+  }
+}
+
+function toWorkflowDraft(
+  name: string,
+  description: string | undefined,
+  trigger: unknown,
+  steps: unknown,
+) {
+  const triggerType =
+    typeof trigger === "object" &&
+    trigger !== null &&
+    "type" in trigger &&
+    trigger.type === "manual"
+      ? "manual"
+      : undefined;
+
+  return {
+    name,
+    ...(description?.trim() ? { description: description.trim() } : {}),
+    trigger: { type: triggerType },
+    steps: Array.isArray(steps)
+      ? steps.map((step) => {
+          if (typeof step !== "object" || step === null) return step;
+          const config =
+            "config" in step && typeof step.config === "string"
+              ? parseConfig(step.config)
+              : "config" in step
+                ? step.config
+                : {};
+          return {
+            stepId: "stepId" in step ? step.stepId : undefined,
+            name: "name" in step ? step.name : undefined,
+            type: "type" in step ? step.type : undefined,
+            action: "action" in step ? step.action : undefined,
+            config,
+          };
+        })
+      : steps,
+  };
+}
+
+function parseConfig(value: string) {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return value;
   }
 }
