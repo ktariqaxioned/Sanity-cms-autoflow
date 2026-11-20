@@ -110,16 +110,26 @@ export default function WorkflowList({
             needs your attention.
           </p>
         </div>
-        <Button asChild variant="secondary" className="max-[760px]:h-9 max-[760px]:text-[11px]">
-          <Link href="/reports">
-            Open task reports
-            <ArrowUpRight size={16} aria-hidden="true" />
-          </Link>
-        </Button>
-        <div className="pointer-events-none absolute inset-16" aria-hidden="true">
-          <span className="absolute top-0 right-8 size-16 rounded-full bg-[#8be5ce]/10 blur-2xl" />
-          <span className="absolute right-0 bottom-2 size-10 rounded-full bg-[#8be5ce]/10 blur-xl" />
-          <span className="absolute top-6 right-24 size-6 rounded-full bg-white/5 blur-md" />
+        <div className="relative z-10 ml-auto grid min-w-60 shrink-0 place-items-center self-stretch max-[760px]:ml-0 max-[760px]:min-w-0 max-[760px]:self-auto">
+          <div
+            className="pointer-events-none absolute top-1/2 left-1/2 size-[340px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#7ea48a]/18 max-[760px]:size-[280px]"
+            aria-hidden="true"
+          >
+            <span className="absolute inset-[34px] rounded-full border border-[#7ea48a]/16" />
+            <span className="absolute inset-[68px] rounded-full border border-[#7ea48a]/16" />
+            <span className="absolute inset-[102px] rounded-full border border-[#7ea48a]/16" />
+            <span className="absolute inset-[136px] rounded-full border border-[#7ea48a]/16" />
+          </div>
+          <Button
+            asChild
+            variant="secondary"
+            className="relative z-10 max-[760px]:h-9 max-[760px]:text-[11px]"
+          >
+            <Link href="/reports">
+              Open task reports
+              <ArrowUpRight size={16} aria-hidden="true" />
+            </Link>
+          </Button>
         </div>
       </section>
 
