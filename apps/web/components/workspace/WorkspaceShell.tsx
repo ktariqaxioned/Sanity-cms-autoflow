@@ -107,8 +107,8 @@ export default function WorkspaceShell({
             <ArrowUpRight size={15} aria-hidden="true" />
           </Link>
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-[#7d8692] max-[760px]:hidden">
-          <span className="size-1.5 rounded-full bg-primary" />
+        <div className="flex items-center gap-2 border-t border-[#23262c] px-2.5 pt-3 text-[11px] text-[#79828e] max-[760px]:hidden">
+          <span className="size-[5px] shrink-0 rounded-full bg-[#74bba4]" />
           Made for your workflow
         </div>
       </aside>
@@ -127,7 +127,7 @@ export default function WorkspaceShell({
             )}
           </div>
           <span className="flex items-center gap-2 text-[11px] text-[#8c959f] max-[760px]:hidden">
-            <span className="size-1.5 rounded-full bg-primary" />
+            <span className="size-[5px] shrink-0 rounded-full bg-[#74bba4]" />
             Run on your terms
           </span>
         </header>
