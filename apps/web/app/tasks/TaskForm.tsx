@@ -3,6 +3,11 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Flag, LoaderCircle, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 const priorities = [
   { value: "low", label: "Low" },
@@ -10,6 +15,13 @@ const priorities = [
   { value: "high", label: "High" },
   { value: "urgent", label: "Urgent" },
 ] as const;
+
+const prioritySelected: Record<string, string> = {
+  low: "border-[#3b4b43] bg-[#252d2b] text-[#afc6b6]",
+  medium: "border-[#3e4551] bg-[#272d36] text-[#bac4d0]",
+  high: "border-[#574a31] bg-[#342d20] text-[#d9c395]",
+  urgent: "border-[#5f3f3d] bg-[#382827] text-[#e0aaa4]",
+};
 
 export default function TaskForm({
   onCancel,
@@ -71,36 +83,44 @@ export default function TaskForm({
   }
 
   return (
-    <section
+    <Card
       id="new-task-form"
-      className="wf-panel af-task-composer"
+      className="mb-8 gap-0 rounded-[11px] bg-card py-0 ring-[#2b3039]"
       aria-labelledby="new-task-heading"
     >
-      <div className="wf-panel-heading">
+      <CardHeader className="flex-row items-center justify-between border-b border-[#292e37] px-6 py-[22px]">
         <div>
-          <p className="wf-eyebrow">Off your mind, into your workspace</p>
-          <h2 id="new-task-heading">Add a task</h2>
+          <p className="mb-1 text-[9px] font-semibold tracking-[0.18em] text-[#929ba7] uppercase">
+            Off your mind, into your workspace
+          </p>
+          <h2 id="new-task-heading" className="text-sm font-medium">
+            Add a task
+          </h2>
         </div>
         {onCancel && (
-          <button
-            className="wf-icon-button"
+          <Button
+            variant="outline"
+            size="icon"
             type="button"
             onClick={onCancel}
             disabled={loading}
             aria-label="Close task form"
           >
             <X size={17} aria-hidden="true" />
-          </button>
+          </Button>
         )}
-      </div>
+      </CardHeader>
       <form onSubmit={handleSubmit} aria-busy={loading}>
-        <fieldset disabled={loading} className="af-composer-fields">
-          <legend className="wf-sr-only">New task details</legend>
-          <label className="wf-field">
+        <fieldset
+          disabled={loading}
+          className="grid gap-5 border-0 p-5 max-[1200px]:grid-cols-1 max-[560px]:gap-5 max-[560px]:p-5"
+        >
+          <legend className="sr-only">New task details</legend>
+          <label className="grid gap-2 text-xs text-[#d5dbe3]">
             <span>
-              What needs to be done? <span className="wf-required">*</span>
+              What needs to be done? <span className="text-[#e7b4aa]">*</span>
             </span>
-            <input
+            <Input
               required
               autoFocus
               maxLength={200}
@@ -109,12 +129,12 @@ export default function TaskForm({
               placeholder="e.g. Review this week’s project priorities"
             />
           </label>
-          <label className="wf-field">
+          <label className="grid gap-2 text-xs text-[#d5dbe3]">
             <span>
               A little more context{" "}
-              <span className="wf-optional">Optional</span>
+              <span className="text-muted-foreground">Optional</span>
             </span>
-            <textarea
+            <Textarea
               maxLength={2000}
               rows={3}
               value={description}
@@ -122,56 +142,65 @@ export default function TaskForm({
               placeholder="Add a note, a next step, or anything you’ll want to remember."
             />
           </label>
-          <fieldset className="af-priority-picker">
-            <legend>Priority</legend>
-            <div>
-              {priorities.map((item) => (
-                <label
-                  key={item.value}
-                  data-priority={item.value}
-                  data-selected={priority === item.value}
-                >
-                  <input
-                    type="radio"
-                    name="task-priority"
-                    value={item.value}
-                    checked={priority === item.value}
-                    onChange={() => setPriority(item.value)}
-                  />
-                  <Flag size={13} aria-hidden="true" />
-                  {item.label}
-                </label>
-              ))}
+          <fieldset className="grid gap-2">
+            <legend className="text-xs text-[#d5dbe3]">Priority</legend>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {priorities.map((item) => {
+                const selected = priority === item.value;
+                return (
+                  <label
+                    key={item.value}
+                    className={cn(
+                      "inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs",
+                      selected
+                        ? prioritySelected[item.value]
+                        : "border-[#303641] text-[#99a3b1]",
+                    )}
+                  >
+                    <input
+                      className="sr-only"
+                      type="radio"
+                      name="task-priority"
+                      value={item.value}
+                      checked={selected}
+                      onChange={() => setPriority(item.value)}
+                    />
+                    <Flag size={13} aria-hidden="true" />
+                    {item.label}
+                  </label>
+                );
+              })}
             </div>
-            <p>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
               High-priority tasks appear in your task report while they’re
               incomplete. Urgent is a separate priority.
             </p>
           </fieldset>
         </fieldset>
-        <div className="af-composer-footer">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#292e37] px-5 py-4 max-[560px]:[&>div]:w-full max-[560px]:[&>div]:justify-end">
           {error && (
-            <p className="wf-form-error" role="alert">
+            <p
+              className="w-full rounded-md border border-[#6b4842] bg-[#322522] px-3 py-2 text-xs text-[#edbcb2]"
+              role="alert"
+            >
               {error}
             </p>
           )}
-          <span>New tasks start as Incomplete.</span>
-          <div>
+          <span className="text-[11px] text-[#8c959f]">
+            New tasks start as Incomplete.
+          </span>
+          <div className="flex items-center gap-2">
             {onCancel && (
-              <button
+              <Button
                 type="button"
-                className="wf-button wf-button-ghost"
+                variant="ghost"
                 onClick={onCancel}
                 disabled={loading}
               >
                 Cancel
-              </button>
+              </Button>
             )}
-            <button
-              type="submit"
-              disabled={loading}
-              className="wf-button wf-button-primary"
-            >
+            <Button type="submit" disabled={loading}>
               {loading ? (
                 <LoaderCircle
                   size={15}
@@ -182,10 +211,10 @@ export default function TaskForm({
                 <Plus size={16} aria-hidden="true" />
               )}
               {loading ? "Adding task…" : "Add task"}
-            </button>
+            </Button>
           </div>
         </div>
       </form>
-    </section>
+    </Card>
   );
 }

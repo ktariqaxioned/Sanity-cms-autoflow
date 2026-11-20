@@ -6,6 +6,8 @@ import {
   Webhook,
   Workflow,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export type WorkflowStep = {
   stepId: string;
@@ -46,6 +48,12 @@ export const actionOptions = [
   },
 ] as const;
 
+const statusClass = {
+  active: "border-[#2f4b40] bg-[#1e3129] text-[#9bd9b7]",
+  draft: "border-[#514630] bg-[#322c20] text-[#d4bb89]",
+  paused: "border-[#414354] bg-[#2a2a37] text-[#b4afd3]",
+} as const;
+
 export function WorkflowStatus({ status }: { status: string }) {
   const label =
     status === "active"
@@ -56,10 +64,17 @@ export function WorkflowStatus({ status }: { status: string }) {
           ? "Draft"
           : status;
   return (
-    <span className="wf-status" data-status={status}>
-      <span />
+    <Badge
+      variant="outline"
+      className={cn(
+        "h-auto gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-medium",
+        statusClass[status as keyof typeof statusClass] ??
+          "border-[#373b46] bg-[#252831] text-[#b1b7c3]",
+      )}
+    >
+      <span className="size-1 rounded-full bg-current" />
       {label}
-    </span>
+    </Badge>
   );
 }
 
@@ -68,7 +83,7 @@ export function WorkflowIcon({ steps }: { steps?: WorkflowStep[] }) {
     ? FileText
     : Workflow;
   return (
-    <span className="wf-workflow-icon">
+    <span className="inline-flex size-[43px] shrink-0 items-center justify-center rounded-[11px] border border-[#3c4347] bg-[#252e2d] text-[#bdd4ca]">
       <Icon size={23} strokeWidth={1.6} aria-hidden="true" />
     </span>
   );
@@ -82,7 +97,7 @@ export function TriggerLabel({ type }: { type?: string }) {
         ? Webhook
         : Hand;
   return (
-    <span className="wf-trigger-label">
+    <span className="inline-flex items-center gap-1.5">
       <Icon size={13} aria-hidden="true" />
       {type === "schedule"
         ? "Scheduled · setup only"
